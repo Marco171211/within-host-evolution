@@ -1,113 +1,99 @@
-# Évolution virale intra-hôte : deux petites études
+# Pourquoi une mutation nouvelle n'est presque jamais transmise
 
-*(Version française de README.md. C'est la version anglaise qui va sur GitHub ;
-celle-ci est là pour la lecture.)*
+*(Version française de README.md. C'est la version anglaise qui sert de page
+d'accueil au dépôt.)*
 
-Deux courtes études en Python écrites pour comprendre deux résultats du groupe
-de Katrina Lythgoe à Oxford. Ce sont des modèles jouets sur données simulées.
-Ni l'une ni l'autre n'apporte quoi que ce soit au domaine : c'est la façon dont
-je me suis expliqué à moi-même ce que les articles affirment.
+Une petite simulation écrite pour vérifier si j'avais compris deux articles sur
+l'évolution virale intra-hôte. C'est un modèle jouet, pas un apport au
+domaine : chaque nombre qu'il produit est une propriété du modèle, pas une
+mesure de quoi que ce soit de réel.
 
-## 1. `bottleneck.py` — pourquoi une mutation nouvelle est rarement transmise
+Je suis élève ingénieur en première année à l'Institut Agro Rennes-Angers,
+parcours statistiques, et je suis le MicroMasters du MIT en statistiques et
+science des données en parallèle. Écrit en novembre 2026.
 
-Motivé par :
+## La question
 
-- Lythgoe et al., *Science* 2021, [doi:10.1126/science.abg0821](https://doi.org/10.1126/science.abg0821)
-  — le goulot d'étranglement à la transmission du SARS-CoV-2 est étroit, donc
-  la plupart des variants intra-hôte sont perdus à la transmission.
-- Ghafari et al., *Nature* 2024, [doi:10.1038/s41586-024-07029-4](https://doi.org/10.1038/s41586-024-07029-4)
-  — 0,1 à 0,5 % des infections persistent 60 jours ou plus, avec une forte
-  sélection positive chez certaines.
+Deux résultats posent le décor :
 
-La question que je voulais trancher moi-même : pour qu'une mutation soit
-transmise, il faut d'abord qu'elle devienne fréquente chez son hôte. Quelle est
-la part de la durée de l'infection, et quelle est la part de la sélection ?
+- Lythgoe et al., *Science* 2021, [doi:10.1126/science.abg0821](https://doi.org/10.1126/science.abg0821).
+  Quand le virus passe d'une personne à la suivante, seules quelques particules
+  passent. L'essentiel de la diversité présente chez une personne est perdu à
+  ce moment-là.
+- Ghafari et al., *Nature* 2024, [doi:10.1038/s41586-024-07029-4](https://doi.org/10.1038/s41586-024-07029-4).
+  0,1 à 0,5 % des infections durent 60 jours ou plus, avec une forte sélection
+  chez certaines et presque aucun changement chez d'autres.
 
-Une mutation nouvelle est suivie dans une population de Wright-Fisher de 5 000
-virions, avec un coefficient de sélection `s`, sur 4 000 réplicats, puis à
-travers un goulot de `Nb` virions.
+Lire les deux ensemble m'a laissé une question. Pour qu'une mutation soit
+transmise, il faut d'abord qu'elle devienne fréquente chez la personne qui la
+porte. Qu'est-ce qui fait le travail : la durée de l'infection, ou la
+sélection ?
 
-**Deux vérifications avant de croire quoi que ce soit.** L'échantillonnage
-Monte-Carlo reproduit `P(transmise) = 1 − (1 − f)^Nb` à 0,003 près sur 24 cas.
-Et la probabilité qu'une mutation avantageuse soit encore présente après 100
-générations correspond à l'approximation classique `2s` de Haldane (0,043 /
-0,100 / 0,175 simulés contre 0,04 / 0,10 / 0,20 pour s = 0,02 / 0,05 / 0,10),
-en s'écartant quand `s` grandit, comme prévu.
+## Ce que fait le script
 
-**Ce qui en ressort.** Une mutation neutre a atteint 5 % de fréquence dans 0
-réplicat sur 4 000 après 100 générations ; avec `s = 0,10`, dans 17,4 % des
-cas. Et la durée compte en plus : à `s = 0,10`, la probabilité de passer un
-goulot de 3 passe de 0,004 à 20 générations à 0,170 à 100, soit un facteur 41.
-La sélection décide si une mutation peut monter ; la durée décide jusqu'où elle
-monte avant la transmission.
+**Partie 1.** Une mutation présente dans une fraction `f` des particules
+virales d'une personne passe une transmission de `n` particules avec la
+probabilité `1 - (1 - f)^n`. Je vérifie qu'un tirage au hasard est d'accord
+avec la formule avant de m'appuyer dessus : sur 24 combinaisons, l'écart
+maximal était de 0,0025, soit du bruit d'échantillonnage.
 
-**Limites.** Sélection nulle ou constante, une seule mutation à la fois, pas de
-recombinaison, pas de dynamique immunitaire, taille de population constante,
-pas d'épistasie. Les vraies populations intra-hôte violent tout cela. Ajouter
-une sélection variable dans le temps, pilotée par l'immunité, serait l'étape
-suivante évidente.
+À 1 % de fréquence, même avec 10 particules transmises, la mutation ne passe
+pas une fois sur dix. Elle doit donc devenir fréquente d'abord.
 
-## 2. `variant_filter.py` — vrais variants minoritaires contre artéfacts
+**Partie 2.** Je suis une mutation nouvelle, partant d'une seule particule sur
+5 000, au fil d'une infection, et je répète 4 000 fois pour chaque réglage. À
+chaque génération, toute la population est remplacée : chaque nouvelle
+particule choisit un parent au hasard. Ce tirage au hasard est la dérive
+génétique — rien d'autre n'est nécessaire pour qu'elle apparaisse. Une mutation
+avantageuse reçoit une petite poussée à chaque génération, avant l'étape de
+copie.
 
-Motivé par Hamilton et al. (preprint 2026), *Identification and Masking of
-Artefactual and Misleading Within-Host Variants in Deep-Sequencing SARS-CoV-2
-Data*, [doi:10.64898/2026.03.19.712895](https://doi.org/10.64898/2026.03.19.712895).
+**Partie 3.** La vérification qui compte. Haldane a montré en 1927 qu'une
+mutation d'avantage `s`, partant d'un seul individu, survit avec une
+probabilité proche de `2s` quand `s` est petit. Ma simulation donne 0,043,
+0,100 et 0,175 pour `s` = 2 %, 5 % et 10 %, contre 0,04, 0,10 et 0,20 attendus.
+Ça correspond pour les petits avantages et s'écarte pour les plus grands,
+exactement comme l'approximation est censée se comporter.
 
-Une séquence consensus moyenne la population virale d'un hôte : l'évolution
-intra-hôte se joue donc en dessous, parmi les variants minoritaires. L'ennui
-pratique, c'est qu'une mutation vue dans 2 % des lectures peut être réelle ou
-être un artéfact. Je voulais voir pourquoi un seuil de fréquence est un filtre
-faible, j'ai donc simulé 3 000 vrais variants et 9 000 artéfacts avec sept
-variables par site, et comparé les approches.
+## Ce qui en sort
 
-| Approche | AUC ROC | Précision moyenne |
-| --- | --- | --- |
-| Seuil de fréquence à 2 % | — | précision 0,45 à rappel 0,65 |
-| Régression logistique, variables brutes | 0,984 | 0,950 |
-| Régression logistique + distance au centre | 0,999 | 0,997 |
-| Arbres de gradient, variables brutes | 0,999 | 0,998 |
+Sans avantage, la mutation a atteint 5 % de fréquence dans **0 infection sur
+4 000** après 100 générations. La chance seule ne rend presque jamais une
+mutation fréquente.
 
-**La partie que je n'attendais pas, et la raison pour laquelle ça valait le
-coup.** Mon premier modèle traitait le biais de brin et la position dans la
-lecture comme inutiles : retirer l'un ou l'autre ne coûtait aucune performance,
-alors que j'avais mis du signal dans les deux. Ces variables sont symétriques —
-les artéfacts sont aux *deux* extrêmes, les vrais variants au milieu — donc
-leurs moyennes par classe sont presque identiques (0,501 contre 0,499 pour le
-biais de brin) tandis que leurs distances moyennes au centre ne le sont pas du
-tout (0,044 contre 0,317). Un modèle linéaire ne sait pas représenter une forme
-en U et renvoie un coefficient proche de zéro. Encoder `|x − 0,5|` récupère le
-signal, et un modèle non linéaire aussi. Je regarde désormais les distributions
-avant de faire confiance à un coefficient.
+Avec 10 % d'avantage, sa probabilité d'être transmise passe de **0,41 %** à 20
+générations à **16,96 %** à 100, soit environ 41 fois plus. Le cas sans
+avantage reste plat quelle que soit la durée d'attente.
 
-**Le chiffre à ne pas croire est le meilleur.** Une AUC de 0,999 signifie que
-mes deux classes sont bien plus séparables que la réalité : je les ai tirées de
-lois distinctes, avec des queues propres et sans bruit corrélé. C'est le
-*classement* des approches que je défendrais ; les scores absolus sont une
-propriété de mon propre générateur de données.
+Les deux ne font donc pas le même travail. La sélection décide si une mutation
+peut monter ; la durée décide jusqu'où elle monte avant la transmission. Une
+infection courte n'exporte presque rien de nouveau, et une infection longue ne
+compte que si quelque chose pousse une mutation vers le haut.
 
-**Questions ouvertes que je n'ai pas pu trancher seul.** Ces variables par site
-existent-elles dans la sortie d'un vrai pipeline de surveillance ? Et comment
-un modèle entraîné sur un protocole se transfère-t-il à un autre, puisque les
-données d'amplicons et de capture devraient porter des signatures d'artéfacts
-différentes ?
+Un chiffre sur lequel il vaut la peine de s'arrêter : une mutation avec 5 %
+d'avantage disparaît quand même 90 % du temps. Être utile ne suffit pas.
+
+## Ce que le modèle laisse de côté
+
+Un avantage constant, au lieu d'un avantage qui change avec la réponse
+immunitaire. Une seule mutation à la fois. Une population de 5 000, bien plus
+petite qu'une vraie infection. Pas de recombinaison. Les vraies infections
+brisent toutes ces hypothèses, et une sélection pilotée par l'immunité et
+variable dans le temps serait la première chose à ajouter.
 
 ## Faire tourner
 
 ```bash
-pip install numpy scikit-learn
-python bottleneck.py        # ~1 s, écrit bottleneck_results.json
-python variant_filter.py    # ~1 s, écrit variant_filter_results.json
+pip install numpy
+python bottleneck.py
 ```
 
-Les deux scripts fixent leurs graines aléatoires, donc les chiffres ci-dessus
-se reproduisent à l'identique. Nécessite Python 3.10 ou plus, numpy et
-scikit-learn.
-
-## Les fichiers
+Tourne en moins d'une seconde. La graine aléatoire est fixée, donc les chiffres
+ci-dessus se reproduisent à l'identique. Nécessite Python 3.10 ou plus récent,
+et numpy.
 
 | Fichier | Contenu |
 | --- | --- |
-| `bottleneck.py` | Modèle de Wright-Fisher intra-hôte, tirage au goulot, deux vérifications analytiques |
-| `variant_filter.py` | Appels de variants simulés, référence par seuil, trois modèles, ablation |
-| `bottleneck_fr.py`, `variant_filter_fr.py` | Les mêmes, commentaires et affichages en français |
-| `*_results.json` | Sortie numérique de chaque exécution |
+| `bottleneck.py` | La simulation |
+| `bottleneck_fr.py` | Le même code, commentaires et affichages en français |
+| `README.md` | Ce texte en anglais |
